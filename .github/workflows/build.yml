@@ -21,25 +21,26 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Generate Gradle Wrapper
-      run: gradle wrapper
-      working-directory: ./game
+    - name: Grant execute permission for gradlew
+      run: |
+        # البحث عن ملف gradlew في أي مجلد فرعي وإعطائه صلاحية التنفيذ
+        find . -name "gradlew" -exec chmod +x {} \;
 
     - name: Generate Debug Keystore
       run: |
+        # البحث عن المجلد الذي يحتوي على ملف build.gradle.kts والانتقال إليه
+        PROJECT_DIR=$(find . -name "build.gradle.kts" -maxdepth 2 -exec dirname {} \; | head -n 1)
+        cd "$PROJECT_DIR"
         keytool -genkey -v -keystore debug.keystore -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
-      working-directory: ./game
-
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
-      working-directory: ./game
 
     - name: Build with Gradle
-      run: ./gradlew assembleDebug
-      working-directory: ./game
+      run: |
+        # البحث عن ملف gradlew وتشغيله من داخل مجلده
+        find . -name "gradlew" -execdir ./gradlew assembleDebug \;
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: game-debug
-        path: game/app/build/outputs/apk/debug/*.apk
+        # البحث عن أي ملف APK في أي مكان
+        path: '**/*.apk'
