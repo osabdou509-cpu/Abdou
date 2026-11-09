@@ -14,9 +14,9 @@ jobs:
 
     - name: Unzip Project
       run: |
-        unzip -o *.zip
-        # الدخول إلى أول مجلد تم إنشاؤه بعد فك الضغط
-        cd */ 
+        unzip -o game.zip
+        # إخبار النظام أن مجلد المشروع هو "app" أو المجلد الرئيسي مباشرة
+        ls -la
 
     - name: Set up JDK 17
       uses: actions/setup-java@v4
@@ -26,19 +26,24 @@ jobs:
 
     - name: Generate Gradle Wrapper
       run: gradle wrapper
+      # نبحث عن ملف build.gradle.kts داخل أي مجلد فرعي
+      working-directory: $(find . -name "build.gradle.kts" -maxdepth 2 -exec dirname {} \; | head -n 1)
 
     - name: Generate Debug Keystore
       run: |
         keytool -genkey -v -keystore debug.keystore -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
+      working-directory: $(find . -name "build.gradle.kts" -maxdepth 2 -exec dirname {} \; | head -n 1)
 
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
+      working-directory: $(find . -name "build.gradle.kts" -maxdepth 2 -exec dirname {} \; | head -n 1)
 
     - name: Build with Gradle
       run: ./gradlew assembleDebug
+      working-directory: $(find . -name "build.gradle.kts" -maxdepth 2 -exec dirname {} \; | head -n 1)
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: game-debug
-        path: app/build/outputs/apk/debug/*.apk
+        path: $(find . -name "*.apk" -path "*/debug/*" | head -n 1)
